@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>부드러운 소통이 시작되는 곳</title>
+    <style>
+        :root { --bg: #1c1c1e; --card: #2c2c2e; --text: #ffffff; --border: rgba(255, 255, 255, 0.1); --btn: #ffffff; --btn-text: #000000; }
+        html, body { height: 100%; margin: 0; background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; }
+        #captcha-ui, #ban-ui { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 999; background: var(--bg); flex-direction: column; }
+        #main-ui { display: none; flex-direction: column; align-items: center; padding: 40px 20px 100px 20px; width: 100%; box-sizing: border-box; overflow-y: auto; height: 100%; }
+        .captcha-box { background: var(--card); border-radius: 28px; width: 85%; max-width: 300px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); box-sizing: border-box; }
+        .code-input { width: 100%; padding: 15px; border-radius: 14px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: var(--text); text-align: center; font-size: 1.1rem; margin-bottom: 15px; outline: none; box-sizing: border-box; }
+        .main-btn { width: 100%; padding: 15px; border-radius: 14px; border: none; background: var(--btn); color: var(--btn-text); font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .menu-item { display: block; background: var(--card); padding: 20px; border-radius: 18px; text-decoration: none; color: var(--text); border: 1px solid var(--border); font-weight: bold; margin-bottom: 12px; text-align: center; width: 100%; max-width: 400px; box-sizing: border-box; }
+        .spec-box { background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 15px; width: 100%; max-width: 400px; font-size: 0.85rem; color: #aaa; margin-top: 15px; line-height: 1.6; text-align: left; }
+        .confetti { position: fixed; z-index: 1001; pointer-events: none; color: #ffffff; font-size: 14px; opacity: 0.8; white-space: nowrap; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="ban-ui" style="display: none;">
+        <div class="captcha-box">
+            <h2 style="color: #ff453a; margin: 0 0 10px;">접속 최종 차단</h2>
+            <p id="ban-reason" style="font-size: 0.9rem; color: #aaa; margin-bottom: 10px;"></p>
+            <p id="timer" style="font-size: 1.1rem; font-weight: bold; color: #fff;"></p>
+        </div>
+    </div>
+
+    <div id="captcha-ui">
+        <div class="captcha-box">
+            <div style="margin-bottom: 10px; font-weight: bold; font-size: 1.1rem;">인증 코드를 입력해 주세요</div>
+            <div style="font-size: 0.85rem; color: #aaa; margin-bottom: 20px;">남은 기회: <span id="chance">3</span>번</div>
+            <input type="text" id="ans" class="code-input" placeholder="코드를 입력하세요" autofocus>
+            <button id="submit-btn" class="main-btn">접속 승인하기</button>
+        </div>
+    </div>
+
+    <div id="main-ui">
+        <h1 style="margin: 20px 0 40px; font-size: 1.3rem; text-align: center;">부드러운 소통이 시작되는 곳</h1>
+        <a href="https://www.youtube.com/@oneui7-q3k" class="menu-item">유튜브 바로가기</a>
+        <a href="https://open.kakao.com/o/sa7ptt9h" class="menu-item">카카오톡 오픈채팅방</a>
+        <a href="https://orangefox.download/" class="menu-item">OrangeFox Recovery</a>
+        <a href="https://apps.samsung.com/appquery/appDetail.as?appId=com.samsung.android.goodlock" class="menu-item">삼성 굿락</a>
+        <a href="https://play.google.com/store/apps/details?id=com.primatelabs.geekbench6" class="menu-item">Geekbench 6</a>
+        <a href="https://github.com/PixelExperience" class="menu-item">Pixel Experience Plus</a>
+        <a href="https://apps.samsung.com/appquery/appDetail.as?appId=com.android.samsung.utilityapp" class="menu-item">삼성 굿가디언즈</a>
+        
+        <div class="spec-box">
+            <b>📱 제작자 폰 사양 (Galaxy S25)</b><br>
+            • CPU: Snapdragon 8 Elite<br>
+            • RAM: 12GB | Storage: 256GB<br>
+            • OS: One UI 8.5 (Android 16)
+        </div>
+
+        <div class="spec-box">
+            <b>💻 제작자 컴 사양 (MacBook Air)</b><br>
+            • Chip: Apple M3<br>
+            • Memory: 8GB | Storage: 256GB<br>
+            • OS: macOS 26.3 Tahoe Beta
+        </div>
+    </div>
+
+    <script>
+        const secret = "ep129d9";
+        const BAN_TIME = 12 * 60 * 60 * 1000; // 12시간
+        let mouseMoved = false;
+        let lastMoveTime = Date.now();
+
+        // 마우스 및 터치 감지
+        const setMoved = () => { mouseMoved = true; lastMoveTime = Date.now(); };
+        window.addEventListener('mousemove', setMoved);
+        window.addEventListener('touchstart', setMoved);
+
+        // 새로고침 횟수 체크
+        let refreshCount = (Number(sessionStorage.getItem("refresh_count")) || 0) + 1;
+        sessionStorage.setItem("refresh_count", refreshCount);
+
+        if (refreshCount > 50) {
+            localStorage.setItem("ban_until", Date.now() + BAN_TIME); 
+            localStorage.setItem("ban_msg", "비정상적인 트래픽 감지 (새로고침 초과)");
+            location.reload();
+        }
+
+        function check() {
+            const now = Date.now();
+            const timeDiff = now - lastMoveTime;
+
+            // 순간이동 클릭 감지 (25ms 미만이면 봇)
+            if (!mouseMoved || timeDiff < 25) {
+                localStorage.setItem("ban_until", now + BAN_TIME);
+                localStorage.setItem("ban_msg", "비정상적인 트래픽 감지 (패턴 분석)");
+                location.reload();
+                return;
+            }
+
+            if (document.getElementById('ans').value.toLowerCase() === secret) {
+                localStorage.setItem("fail_count", 0);
+                localStorage.setItem("auth_pass", now + 600000); // 10분간 유지
+                startRain();
+                setTimeout(() => { 
+                    document.getElementById('captcha-ui').style.display = 'none'; 
+                    document.getElementById('main-ui').style.display = 'flex'; 
+                }, 800);
+            } else {
+                let fails = (Number(localStorage.getItem("fail_count")) || 0) + 1;
+                localStorage.setItem("fail_count", fails);
+                document.getElementById('chance').innerText = Math.max(0, 3 - fails);
+                if (fails >= 3) {
+                    localStorage.setItem("ban_until", now + BAN_TIME);
+                    localStorage.setItem("ban_msg", "비정상적인 트래픽 감지 (인증 실패)");
+                    location.reload();
+                } else { alert("코드가 틀렸습니다."); document.getElementById('ans').value = ""; }
+            }
+        }
+
+        document.getElementById('submit-btn').addEventListener('click', check);
+
+        function startRain() {
+            const words = ["Magisk", "Root", "Kernel", "SU", "Zygisk"];
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const f = document.createElement("div");
+                    f.className = "confetti";
+                    f.innerText = words[Math.floor(Math.random() * words.length)];
+                    f.style.left = (Math.random() * 90) + "vw"; f.style.top = "-30px";
+                    document.body.appendChild(f);
+                    f.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(110vh)' }], { duration: 2500 }).onfinish = () => f.remove();
+                }, i * 150);
+            }
+        }
+
+        window.onload = () => {
+            const now = Date.now();
+            const banUntil = Number(localStorage.getItem("ban_until"));
+            const authPass = Number(localStorage.getItem("auth_pass"));
+
+            if (banUntil && now < banUntil) {
+                document.getElementById('captcha-ui').style.display = 'none';
+                document.getElementById('ban-ui').style.display = 'flex';
+                document.getElementById('ban-reason').innerText = localStorage.getItem("ban_msg");
+                
+                const updateTimer = () => {
+                    const rem = Math.ceil((banUntil - Date.now()) / 1000);
+                    if (rem <= 0) { 
+                        localStorage.removeItem("ban_until"); 
+                        localStorage.setItem("fail_count", 0);
+                        sessionStorage.setItem("refresh_count", 0);
+                        location.reload(); 
+                        return;
+                    }
+                    const h = Math.floor(rem / 3600);
+                    const m = Math.floor((rem % 3600) / 60);
+                    const s = rem % 60;
+                    document.getElementById('timer').innerText = `${h}시간 ${m}분 ${s}초 후 시도 가능`;
+                };
+                updateTimer();
+                setInterval(updateTimer, 1000);
+                return;
+            }
+
+            if (authPass && now < authPass) {
+                document.getElementById('captcha-ui').style.display = 'none';
+                document.getElementById('main-ui').style.display = 'flex';
+            }
+        };
+    </script>
+</body>
+</html>
